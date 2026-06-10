@@ -23,6 +23,9 @@ struct RenderObject {
     float r, g, b;  // 颜色
 };
 
+// 前向声明物理更新函数（在 main_visible.cpp 中定义）
+void UpdatePhysics();
+
 class OpenGLRenderer {
 private:
     static OpenGLRenderer* s_instance;

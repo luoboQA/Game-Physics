@@ -1,7 +1,11 @@
 #include "OpenGLRenderer.h"
 #include <cmath>
+#include <cstdio>
 
 OpenGLRenderer* OpenGLRenderer::s_instance = nullptr;
+
+// 全局物理更新函数（需要在外部定义）
+void UpdatePhysics();
 
 OpenGLRenderer::OpenGLRenderer()
     : m_width(800), m_height(600)
@@ -23,6 +27,7 @@ void OpenGLRenderer::Init(int argc, char** argv, int width, int height) {
     glutInit(&argc, argv);
     glutInitDisplayMode(GLUT_DOUBLE | GLUT_RGB | GLUT_DEPTH);
     glutInitWindowSize(width, height);
+    glutInitWindowPosition(100, 100);  // 确保窗口在可见位置
     glutCreateWindow("Game Physics Engine");
     
     glEnable(GL_DEPTH_TEST);
@@ -30,7 +35,6 @@ void OpenGLRenderer::Init(int argc, char** argv, int width, int height) {
     glEnable(GL_LIGHT0);
     glEnable(GL_COLOR_MATERIAL);
     
-    // 设置光照
     GLfloat lightPos[] = { 5.0f, 10.0f, 5.0f, 1.0f };
     glLightfv(GL_LIGHT0, GL_POSITION, lightPos);
     
@@ -40,6 +44,8 @@ void OpenGLRenderer::Init(int argc, char** argv, int width, int height) {
     glutReshapeFunc(ReshapeCallback);
     glutKeyboardFunc(KeyboardCallback);
     glutIdleFunc(IdleCallback);
+    
+    printf("[OpenGL] Initialized successfully\n");
 }
 
 void OpenGLRenderer::AddObject(RigidBody* body, Collider* collider, float r, float g, float b) {
@@ -59,6 +65,7 @@ void OpenGLRenderer::ClearObjects() {
 void OpenGLRenderer::Run(float dt) {
     m_dt = dt;
     m_running = true;
+    printf("[OpenGL] Entering main loop\n");
     glutMainLoop();
 }
 
@@ -82,13 +89,27 @@ void OpenGLRenderer::ReshapeCallback(int w, int h) {
 }
 
 void OpenGLRenderer::KeyboardCallback(unsigned char key, int x, int y) {
-    if (key == 27 || key == 'q') {  // ESC or q
-        if (s_instance) s_instance->Stop();
+    if (!s_instance) return;
+    
+    switch(key) {
+        case 'w': s_instance->m_cameraPos.z -= 1.0f; break;
+        case 's': s_instance->m_cameraPos.z += 1.0f; break;
+        case 'a': s_instance->m_cameraPos.x -= 1.0f; break;
+        case 'd': s_instance->m_cameraPos.x += 1.0f; break;
+        case 'r': s_instance->m_cameraPos.y += 1.0f; break;
+        case 'f': s_instance->m_cameraPos.y -= 1.0f; break;
+        case 'c': s_instance->m_cameraPos = Vec3(15, 10, 15); break;
+        case 27:  // ESC
+        case 'q': s_instance->Stop(); break;
     }
+    glutPostRedisplay();
 }
 
 void OpenGLRenderer::IdleCallback() {
     if (s_instance && s_instance->m_running) {
+        // 更新物理
+        UpdatePhysics();
+        // 请求重绘
         glutPostRedisplay();
     }
 }
@@ -132,11 +153,11 @@ void OpenGLRenderer::DrawGrid() {
     glColor3f(0.5f, 0.5f, 0.5f);
     glBegin(GL_LINES);
     
-    for (int i = -10; i <= 10; i++) {
-        glVertex3f(i, -5.0f, -10.0f);
-        glVertex3f(i, -5.0f, 10.0f);
-        glVertex3f(-10.0f, -5.0f, i);
-        glVertex3f(10.0f, -5.0f, i);
+    for (int i = -15; i <= 15; i++) {
+        glVertex3f(i, -5.0f, -15.0f);
+        glVertex3f(i, -5.0f, 15.0f);
+        glVertex3f(-15.0f, -5.0f, i);
+        glVertex3f(15.0f, -5.0f, i);
     }
     
     glEnd();
